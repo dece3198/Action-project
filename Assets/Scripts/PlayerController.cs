@@ -5,17 +5,15 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     private CharacterController characterController;
-    private Animator animator;
 
     public bool isMove;
-    public bool isJumpCool = true;
-    private float moveY;
+    public float moveY;
 
     [SerializeField] private Camera cam;
     [SerializeField] private Transform cameraPoint;
 
-    [SerializeField] private float moveSpeed;
-    [SerializeField] private float jumpSpeed;
+    public float moveSpeed;
+    public float jumpSpeed;
     [SerializeField] private float rotateSpeed;
     [SerializeField] private GroundChecker groundChecker;
 
@@ -25,7 +23,6 @@ public class PlayerController : MonoBehaviour
     {
         characterController = GetComponent<CharacterController>();
         groundChecker = GetComponent<GroundChecker>();
-        animator = GetComponent<Animator>();
         cam = GameObject.Find("Main Camera").GetComponent<Camera>();
         Cursor.lockState = CursorLockMode.Locked;
     }
@@ -38,24 +35,6 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         Gravity();
-
-        if(isMove)
-        {
-            animator.SetBool("Walk", true);
-            if (Input.GetKey(KeyCode.LeftShift))
-            {
-                animator.SetBool("Run", true);
-            }
-            else
-            {
-                animator.SetBool("Run", false);
-            }
-        }
-        else
-        {
-            animator.SetBool("Run", false);
-            animator.SetBool("Walk", false);
-        }
     }
 
     private void PlayerMove()
@@ -86,32 +65,18 @@ public class PlayerController : MonoBehaviour
 
     private void Gravity()
     {
-        if(Input.GetKeyDown(KeyCode.Space))
-        {
-            if(isJumpCool)
-            {
-                moveY = jumpSpeed * Time.deltaTime;
-                animator.Play("Running Jump");
-                StartCoroutine(JumpCo());
-            }
-        }
+        characterController.Move(Vector3.up * moveY * Time.deltaTime);
 
-        if(groundChecker.IsGrounded)
+        if (groundChecker.IsGrounded)
         {
-            moveY = 0;
+            if(moveY < 0)
+            {
+                moveY = 0;
+            }
         }
         else
         {
             moveY += Physics.gravity.y * Time.deltaTime;
         }
-
-        characterController.Move(Vector3.up * moveY * Time.deltaTime);
-    }
-
-    private IEnumerator JumpCo()
-    {
-        isJumpCool = false;
-        yield return new WaitForSeconds(1f);
-        isJumpCool = true;
     }
 }
