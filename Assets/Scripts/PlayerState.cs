@@ -18,6 +18,7 @@ public class PlayerIdle : BaseState<PlayerState>
     private float time;
     public override void Enter(PlayerState player)
     {
+        player.controller.moveSpeed = 3f;
         player.animator.SetBool("Walk", false);
         player.animator.SetBool("Run", false);
         time = 0;
@@ -249,7 +250,7 @@ public class PlayerState : MonoBehaviour,IInteractable
     public ParticleSystem atkParticleA;
     public ParticleSystem atkParticleB;
     public ViewDetector viewDetector;
-    [SerializeField] private float pushPower;
+    public float pushPower;
 
     public bool isAtk = false;
     public bool isComboA = false;
@@ -316,6 +317,7 @@ public class PlayerState : MonoBehaviour,IInteractable
                 {
                     if (viewDetector.AtkTarget.GetComponent<EnemyController>().isAtk)
                     {
+                        audioSource.PlayOneShot(audioClip[1]);
                         viewDetector.AtkTarget.GetComponent<EnemyController>().ChangeState(EnemyState.Groggy);
                     }
                 }
@@ -365,12 +367,17 @@ public class PlayerState : MonoBehaviour,IInteractable
         if (viewDetector.Target != null)
         {
             damage = 10;
+            audioSource.PlayOneShot(audioClip[4]);
             viewDetector.Target.GetComponent<IInteractable>()?.TakeHit(damage);
             pushPower = 2f;
             if(!viewDetector.Target.GetComponent<Monster>().isSkill)
             {
                 viewDetector.Target.GetComponent<Rigidbody>().AddForce((transform.forward + transform.up) * pushPower, ForceMode.Impulse);
             }
+        }
+        else
+        {
+            audioSource.PlayOneShot(audioClip[2]);
         }
     }
 
@@ -384,11 +391,12 @@ public class PlayerState : MonoBehaviour,IInteractable
         {
             damage = 30;
             pushPower = 4f;
-            viewDetector.FindRangeTarget(damage);
-            if (!viewDetector.Target.GetComponent<Monster>().isSkill)
-            {
-                viewDetector.Target.GetComponent<Rigidbody>().AddForce((transform.forward + transform.up) * pushPower, ForceMode.Impulse);
-            }
+            audioSource.PlayOneShot(audioClip[5]);
+            viewDetector.FindRangeTarget(damage, pushPower);
+        }
+        else
+        {
+            audioSource.PlayOneShot(audioClip[3]);
         }
     }
 

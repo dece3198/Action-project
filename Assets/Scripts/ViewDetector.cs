@@ -44,7 +44,7 @@ public class ViewDetector : MonoBehaviour
         target = null;
     }
 
-    public void FindRangeTarget(float damage)
+    public void FindRangeTarget(float damage, float power)
     {
         Collider[] targets = Physics.OverlapSphere(transform.position, rangeRadiu, layerMask);
 
@@ -66,6 +66,7 @@ public class ViewDetector : MonoBehaviour
             if(rangeTarget != null)
             {
                 rangeTarget.GetComponent<IInteractable>()?.TakeHit(damage);
+                rangeTarget.GetComponent<Rigidbody>().AddForce((transform.forward + transform.up) * power, ForceMode.Impulse);
             }
         }
         rangeTarget = null;

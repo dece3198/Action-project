@@ -181,7 +181,9 @@ public class EnemyHit : BaseState<EnemyController>
     private IEnumerator HitCo(EnemyController player)
     {
         player.skinnedMesh.material.color = Color.red;
+        player.gameObject.layer = 0;
         yield return new WaitForSeconds(0.2f);
+        player.gameObject.layer = 7;
         player.skinnedMesh.material.color = Color.white;
     }
 }
@@ -370,9 +372,12 @@ public class EnemyDie : BaseState<EnemyController>
     public override void Enter(EnemyController player)
     {
         player.animator.Play("Die");
-        player.StartCoroutine(DieCo(player));
         player.isGroggy = false;
         player.gameObject.layer = 0;
+        player.viewDetector.FindTarget();
+        player.viewDetector.Target.GetComponent<PlayerController>().enabled = false;
+        player.viewDetector.Target.GetComponent<PlayerState>().enabled = false;
+        player.StartCoroutine(TeleportManager.instance.Teleport());
     }
 
     public override void Exit(EnemyController player)
@@ -381,12 +386,6 @@ public class EnemyDie : BaseState<EnemyController>
 
     public override void Update(EnemyController player)
     {
-    }
-
-    private IEnumerator DieCo(EnemyController enemy)
-    {
-        yield return new WaitForSeconds(5f);
-
     }
 }
 
