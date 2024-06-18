@@ -6,24 +6,18 @@ using UnityEngine.UI;
 
 public enum EnemyState
 {
-    Idle, Walk, Run, Attack, Hit, Groggy, SkillA, SkillB, SkillC    
+    Idle, Walk, Run, Attack, Hit, Groggy, SkillA, SkillB, SkillC, Die
 }
 
 public class EnemyIdle : BaseState<EnemyController>
 {
     float time;
-    
+    bool isSkillOn = true;
     public override void Enter(EnemyController player)
     {
         player.isSkillB = false;
         player.animator.SetBool("Walk", false);
         time = 0;
-
-        if(!player.isSword)
-        {
-            player.animator.Play("On");
-            player.isSword = true;
-        }
     }
 
     public override void Exit(EnemyController player)
@@ -34,14 +28,13 @@ public class EnemyIdle : BaseState<EnemyController>
     {
         player.viewDetector.FindTarget();
 
-        if(player.katanaPosA.transform.childCount < 0)
+        if(player.weaponPosA.transform.childCount < 0)
         {
             time += Time.deltaTime;
 
             if (time > 8f)
             {
                 player.animator.Play("Off");
-                player.isSword = false;
                 time = 0;
             }
         }
@@ -49,6 +42,22 @@ public class EnemyIdle : BaseState<EnemyController>
 
         if (player.viewDetector.Target != null)
         {
+            if (!player.isSword)
+            {
+                player.animator.Play("On");
+            }
+            else
+            {
+                if (player.type != MonsterType.Mob)
+                {
+                    if(isSkillOn)
+                    {
+                        player.Skill = player.SkillCo();
+                        player.StartCoroutine(player.Skill);
+                        isSkillOn = false;
+                    }
+                }
+            }
             player.ChangeState(EnemyState.Walk);
         }
     }
@@ -149,6 +158,7 @@ public class EnemyHit : BaseState<EnemyController>
 {
     public override void Enter(EnemyController player)
     {
+        player.isGroggy = false;
         player.StartCoroutine(HitCo(player));
         if(player.animator.GetCurrentAnimatorStateInfo(0).IsName("On"))
         {
@@ -160,6 +170,7 @@ public class EnemyHit : BaseState<EnemyController>
 
     public override void Exit(EnemyController player)
     {
+        player.isGroggy = true;
     }
 
     public override void Update(EnemyController player)
@@ -169,9 +180,9 @@ public class EnemyHit : BaseState<EnemyController>
 
     private IEnumerator HitCo(EnemyController player)
     {
-        player.mat.color = Color.red;
+        player.skinnedMesh.material.color = Color.red;
         yield return new WaitForSeconds(0.2f);
-        player.mat.color = Color.white;
+        player.skinnedMesh.material.color = Color.white;
     }
 }
 
@@ -179,12 +190,16 @@ public class EnemyGroggy : BaseState<EnemyController>
 {
     public override void Enter(EnemyController player)
     {
-
-
+        player.animator.Play("Groggy");
+        player.groggyParticle.gameObject.SetActive(true);
+        player.groggyParticle.Play();
+        player.isAtk = false;
+        player.isGroggy = false;
     }
 
     public override void Exit(EnemyController player)
     {
+        player.isGroggy = true;
     }
 
     public override void Update(EnemyController player)
@@ -325,7 +340,7 @@ public class EnemySkillC : BaseState<EnemyController>
         player.startSkillC.gameObject.SetActive(true);
         player.startSkillC.Play();
 
-        while (runningTime > .0f)
+        while (runningTime > 0f)
         {
             runningTime -= Time.deltaTime;
             player.projectorC.orthographicSize += 7.5f * Time.deltaTime;
@@ -350,11 +365,36 @@ public class EnemySkillC : BaseState<EnemyController>
     }
 }
 
+public class EnemyDie : BaseState<EnemyController>
+{
+    public override void Enter(EnemyController player)
+    {
+        player.animator.Play("Die");
+        player.StartCoroutine(DieCo(player));
+        player.isGroggy = false;
+        player.gameObject.layer = 0;
+    }
 
-public class EnemyController : MonoBehaviour, IInteractable
+    public override void Exit(EnemyController player)
+    {
+    }
+
+    public override void Update(EnemyController player)
+    {
+    }
+
+    private IEnumerator DieCo(EnemyController enemy)
+    {
+        yield return new WaitForSeconds(5f);
+
+    }
+}
+
+
+public class EnemyController : Monster, IInteractable
 {
     private float hp;
-    public float HP 
+    public float Hp 
     {
         get { return hp; } 
         set 
@@ -362,51 +402,29 @@ public class EnemyController : MonoBehaviour, IInteractable
             hp = value; 
         }
     }
-    public float damage;
-    public float pushPower;
-    public float speed;
+
+
     public EnemyState enemyState;
 
     public StateMachine<EnemyState, EnemyController> stateMachine = new StateMachine<EnemyState, EnemyController>();
-    public Animator animator;
-    public ViewDetector viewDetector;
-    public AudioSource audioSource;
-    public AudioClip[] audioClips;
-    public Material mat;
-    [SerializeField] private SkinnedMeshRenderer skinnedMesh;
-    [SerializeField] private GameObject canvas;
-    [SerializeField] private GameObject damageText;
-    [SerializeField] private Slider slider;
-    [SerializeField] private Stack<GameObject> textStack = new Stack<GameObject>();
     [SerializeField] private Dictionary<int,EnemyState> skillDic = new Dictionary<int,EnemyState>();
-    [SerializeField] private GameObject katana;
-    public GameObject katanaPosA;
-    [SerializeField] private GameObject katanaPosB;
+
     public ParticleSystem skillA;
     public ParticleSystem skillB;
     public ParticleSystem startSkillC;
     public ParticleSystem endSkillC;
-    public Projector projectorA;
-    public Projector projectorB;
-    public Projector projectorC;
+    public ParticleSystem groggyParticle;
 
-
-    public bool isSkill;
-    public bool isSword = false;
-    public bool isAtk = false;
-    public bool isAtkCool = true;
     public bool isSkillB;
-    public bool isDrive = true;
 
 
 
     private void Awake()
     {
-        HP = 1000;
+        Hp = maxHp;
         animator = GetComponent<Animator>();
         viewDetector = GetComponent<ViewDetector>();
         audioSource = GetComponent<AudioSource>();
-        mat = skinnedMesh.material;
         stateMachine.Reset(this);
         stateMachine.AddState(EnemyState.Idle, new EnemyIdle());
         stateMachine.AddState(EnemyState.Walk, new EnemyWalk());
@@ -417,6 +435,7 @@ public class EnemyController : MonoBehaviour, IInteractable
         stateMachine.AddState(EnemyState.SkillA, new EnemySkillA());
         stateMachine.AddState(EnemyState.SkillB, new EnemySkillB());
         stateMachine.AddState(EnemyState.SkillC, new EnemySkillC());
+        stateMachine.AddState(EnemyState.Die, new EnemyDie());
         ChangeState(EnemyState.Idle);
 
         skillDic.Add(0, EnemyState.SkillA);
@@ -424,19 +443,6 @@ public class EnemyController : MonoBehaviour, IInteractable
         skillDic.Add(2, EnemyState.SkillC);
     }
 
-    private void Start()
-    {
-        for(int i = 0; i < 5; i++)
-        {
-            GameObject damage = Instantiate(damageText, canvas.transform);
-            textStack.Push(damage);
-            damage.SetActive(false);
-            damage.transform.position = canvas.transform.position;
-            damage.GetComponent<DamageText>().enemyController = this;
-        }
-
-        StartCoroutine(SkillCo());
-    }
 
     private void OnCollisionEnter(Collision collision)
     {
@@ -458,6 +464,7 @@ public class EnemyController : MonoBehaviour, IInteractable
     private void Update()
     {
         stateMachine.Update();
+
         if(!isSkill)
         {
             viewDetector.FindAttackTarget();
@@ -465,37 +472,46 @@ public class EnemyController : MonoBehaviour, IInteractable
             {
                 if(isAtkCool)
                 {
-                    StartCoroutine(AttackCo());
-                    ChangeState(EnemyState.Attack);
+                    if(isSword)
+                    {
+                        if(isGroggy)
+                        {
+                            StartCoroutine(AttackCo());
+                            ChangeState(EnemyState.Attack);
+                        }
+                    }
                 }
             }
         }
 
-        if(isAtk)
+        viewDetector.FindTarget();
+
+        if(slider != null)
         {
-            if(Input.GetMouseButtonDown(2))
+            if(type != MonsterType.Mob)
             {
-                ChangeState(EnemyState.Groggy);
+                if(viewDetector.Target != null)
+                {
+                    slider.gameObject.SetActive(true);
+                }
+                else
+                {
+                    slider.gameObject.SetActive(false);
+                }
             }
+            slider.value = Hp / maxHp;
         }
     }
 
-    private void ExitPool(float _damage)
-    {
-        GameObject damage = textStack.Pop();
-        damage.transform.GetComponent<TextMeshProUGUI>().text = _damage.ToString();
-        damage.SetActive(true);
-    }
 
-    public void EnterPool(GameObject _damageText)
-    {
-        textStack.Push(_damageText);
-        _damageText.SetActive(false);
-        _damageText.transform.position = canvas.transform.position;
-    }
 
     public void Die()
     {
+        if(type == MonsterType.Mob)
+        {
+            Destroy(gameObject, 5f);
+        }
+        ChangeState(EnemyState.Die);
     }
 
     public void ChangeState(EnemyState state)
@@ -506,7 +522,7 @@ public class EnemyController : MonoBehaviour, IInteractable
 
     public void TakeHit(float damage)
     {
-        HP -= damage;
+        Hp -= damage;
         ExitPool(damage);
         if(!isSkill)
         {
@@ -543,26 +559,27 @@ public class EnemyController : MonoBehaviour, IInteractable
     public void KatanaOn()
     {
         audioSource.PlayOneShot(audioClips[0]);
-        katana.transform.parent = katanaPosA.transform;
-        katana.transform.position = katanaPosA.transform.position;
-        katana.transform.rotation = katanaPosA.transform.rotation;
-        ChangeState(enemyState);
+        weapon.transform.parent = weaponPosA.transform;
+        weapon.transform.position = weaponPosA.transform.position;
+        weapon.transform.rotation = weaponPosA.transform.rotation;
+        isSword = true;
+        ChangeState(EnemyState.Idle);
     }
 
     public void KatanaOff()
     {
-        katana.transform.parent = katanaPosB.transform;
-        katana.transform.position = katanaPosB.transform.position;
-        katana.transform.rotation = katanaPosB.transform.rotation;
+        weapon.transform.parent = weaponPosB.transform;
+        weapon.transform.position = weaponPosB.transform.position;
+        weapon.transform.rotation = weaponPosB.transform.rotation;
         isSword = false;
         isSkillB = false;
     }
 
-    private IEnumerator SkillCo()
+    public IEnumerator SkillCo()
     {
         while(true)
         {
-            int rand = Random.Range(0, 3);
+            int rand = Random.Range(0, skillDic.Count);
             int randCool = Random.Range(8, 15);
             yield return new WaitForSeconds(randCool);
             ChangeState(skillDic[rand]);

@@ -67,7 +67,6 @@ public class ViewDetector : MonoBehaviour
             {
                 rangeTarget.GetComponent<IInteractable>()?.TakeHit(damage);
             }
-            return;
         }
         rangeTarget = null;
     }

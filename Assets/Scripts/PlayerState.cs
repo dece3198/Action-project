@@ -255,6 +255,7 @@ public class PlayerState : MonoBehaviour,IInteractable
     public bool isComboA = false;
     public bool isComboB = false;
     private bool isAtkCool = true;
+    private bool isBlockCool = true;
 
     private void Awake()
     {
@@ -275,7 +276,7 @@ public class PlayerState : MonoBehaviour,IInteractable
     private void Update()
     {
         stateMachine.Update();
-        if(state != State.Jump)
+        if (state != State.Jump)
         {
             if (Input.GetMouseButtonDown(0))
             {
@@ -283,7 +284,7 @@ public class PlayerState : MonoBehaviour,IInteractable
                 {
                     if (state != State.Attack)
                     {
-                        if(isAtkCool)
+                        if (isAtkCool)
                         {
                             StartCoroutine(AttackCo());
                             ChangeState(State.Attack);
@@ -298,10 +299,27 @@ public class PlayerState : MonoBehaviour,IInteractable
             }
         }
 
-        if(Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKeyDown(KeyCode.Space))
         {
-            if(state != State.Hit)
-            ChangeState(State.Jump);
+            if (state != State.Hit)
+                ChangeState(State.Jump);
+        }
+
+        viewDetector.FindAttackTarget();
+        if(isBlockCool)
+        {
+            if (Input.GetMouseButtonDown(1))
+            {
+                animator.Play("Block");
+                StartCoroutine(BlockCO());
+                if (viewDetector.AtkTarget != null)
+                {
+                    if (viewDetector.AtkTarget.GetComponent<EnemyController>().isAtk)
+                    {
+                        viewDetector.AtkTarget.GetComponent<EnemyController>().ChangeState(EnemyState.Groggy);
+                    }
+                }
+            }
         }
     }
 
@@ -349,7 +367,7 @@ public class PlayerState : MonoBehaviour,IInteractable
             damage = 10;
             viewDetector.Target.GetComponent<IInteractable>()?.TakeHit(damage);
             pushPower = 2f;
-            if(!viewDetector.Target.GetComponent<EnemyController>().isSkill)
+            if(!viewDetector.Target.GetComponent<Monster>().isSkill)
             {
                 viewDetector.Target.GetComponent<Rigidbody>().AddForce((transform.forward + transform.up) * pushPower, ForceMode.Impulse);
             }
@@ -358,15 +376,19 @@ public class PlayerState : MonoBehaviour,IInteractable
 
     public void AtkParticleB()
     {
-        damage = 30;
+        
         atkParticleB.gameObject.SetActive(true);
         atkParticleB.Play();
-        viewDetector.FindRangeTarget(damage);
         viewDetector.FindTarget();
         if (viewDetector.Target != null)
         {
+            damage = 30;
             pushPower = 4f;
-            viewDetector.Target.GetComponent<Rigidbody>().AddForce((transform.forward + transform.up) * pushPower, ForceMode.Impulse);
+            viewDetector.FindRangeTarget(damage);
+            if (!viewDetector.Target.GetComponent<Monster>().isSkill)
+            {
+                viewDetector.Target.GetComponent<Rigidbody>().AddForce((transform.forward + transform.up) * pushPower, ForceMode.Impulse);
+            }
         }
     }
 
@@ -388,5 +410,15 @@ public class PlayerState : MonoBehaviour,IInteractable
         isAtkCool = false;
         yield return new WaitForSeconds(1f);
         isAtkCool = true;
+    }
+
+    private IEnumerator BlockCO()
+    {
+        float speed = controller.moveSpeed;
+        isBlockCool = false;
+        controller.moveSpeed = 0;
+        yield return new WaitForSeconds(1f);
+        isBlockCool = true;
+        controller.moveSpeed = speed;
     }
 }

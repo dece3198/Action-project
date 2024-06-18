@@ -27,14 +27,10 @@ public class PlayerController : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
     }
 
-    private void FixedUpdate()
-    {
-        PlayerMove();
-    }
-
     private void Update()
     {
         Gravity();
+        PlayerMove();
     }
 
     private void PlayerMove()
