@@ -25,7 +25,7 @@ public class Monster : MonoBehaviour
     [SerializeField] protected GameObject canvas;
     [SerializeField] protected GameObject damageText;
     [SerializeField] protected Stack<GameObject> textStack = new Stack<GameObject>();
-    [SerializeField] protected Slider slider;
+    public Slider slider;
     public SkinnedMeshRenderer skinnedMesh;
     public GameObject weapon;
     public GameObject weaponPosA;

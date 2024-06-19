@@ -23,6 +23,7 @@ public class PlayerSkill : MonoBehaviour
     [SerializeField] private Image eSkillImage;
     [SerializeField] private ParticleSystem eSkillParticle;
 
+    public bool isSkill = true;
     private bool isQSkill = true;
     private bool isESkill = true;   
 
@@ -43,10 +44,14 @@ public class PlayerSkill : MonoBehaviour
                 {
                     if (controller.moveSpeed > 0)
                     {
-                        speed = controller.moveSpeed;
-                        controller.moveSpeed = 0;
-                        state.animator.Play("QSkill");
-                        StartCoroutine(QSkillCo());
+                        if(state.state != State.Attack)
+                        {
+                            isSkill = false;
+                            speed = controller.moveSpeed;
+                            controller.moveSpeed = 0;
+                            state.animator.Play("QSkill");
+                            StartCoroutine(QSkillCo());
+                        }
                     }
                 }
             }
@@ -60,10 +65,14 @@ public class PlayerSkill : MonoBehaviour
                 {
                     if(controller.moveSpeed > 0)
                     {
-                        speed = controller.moveSpeed;
-                        controller.moveSpeed = 0;
-                        StartCoroutine(ESkillCo());
-                        StartCoroutine(ESkill());
+                        if (state.state != State.Attack)
+                        {
+                            isSkill = false;
+                            speed = controller.moveSpeed;
+                            controller.moveSpeed = 0;
+                            StartCoroutine(ESkillCo());
+                            StartCoroutine(ESkill());
+                        }
                     }
                 }
             }
@@ -79,7 +88,7 @@ public class PlayerSkill : MonoBehaviour
         qSkillParticle.Play();
         qSkillParticle.transform.position = qSkillPos.transform.position;
         qSkillParticle.transform.rotation = qSkillPos.transform.rotation;
-        float time = 0.7f;
+        float time = 0.8f;
         while (time > 0)
         {
             time -= Time.deltaTime;
@@ -87,6 +96,7 @@ public class PlayerSkill : MonoBehaviour
             qSkillObj.transform.Translate(Vector3.forward * 15 * Time.deltaTime);
             yield return null;
         }
+        isSkill = true;
         controller.moveSpeed = speed;
         qSkillObj.transform.position = qSkillPos.transform.position;
 
@@ -109,15 +119,16 @@ public class PlayerSkill : MonoBehaviour
     public IEnumerator ESkill()
     {
         state.animator.Play("ESkill");
-        state.damage = 10;
+        state.damage = 20;
         state.pushPower = 0;
         eSkillParticle.gameObject.SetActive(true);
         eSkillParticle.Play();
-        for(int i = 0; i < 10; i++)
+        for(int i = 0; i < 5; i++)
         {
             viewDetector.FindRangeTarget(state.damage,state.pushPower);
-            yield return new WaitForSeconds(0.2f);
+            yield return new WaitForSeconds(0.5f);
         }
+        isSkill = true;
         controller.moveSpeed = speed;
         eSkillParticle.gameObject.SetActive(false);
     }

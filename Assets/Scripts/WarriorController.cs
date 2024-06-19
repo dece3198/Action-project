@@ -461,6 +461,16 @@ public class WarriorController : Monster, IInteractable
                 }
             }
         }
+
+        viewDetector.FindTarget();
+        if(slider != null)
+        {
+            if(viewDetector.Target != null)
+            {
+                slider.gameObject.SetActive(true);
+            }
+            slider.value = Hp / maxHp;
+        }
     }
 
     public void TakeHit(float damage)

@@ -57,8 +57,8 @@ public class EnemyIdle : BaseState<EnemyController>
                         isSkillOn = false;
                     }
                 }
+                player.ChangeState(EnemyState.Walk);
             }
-            player.ChangeState(EnemyState.Walk);
         }
     }
 }
@@ -80,6 +80,10 @@ public class EnemyWalk : BaseState<EnemyController>
         player.viewDetector.FindTarget();
         if (player.viewDetector.Target != null)
         {
+            if (!player.isSword)
+            {
+                player.animator.Play("On");
+            }
             Vector3 dir = player.viewDetector.Target.transform.position - player.transform.position;
             dir.Normalize();
             player.transform.position = Vector3.MoveTowards(player.transform.position, player.viewDetector.Target.transform.position, player.speed * Time.deltaTime);
@@ -108,7 +112,6 @@ public class EnemyRun : BaseState<EnemyController>
 
     public override void Update(EnemyController player)
     {
-        player.IdleOn();
     }
 
     private IEnumerator RunAttack1(EnemyController player)
@@ -124,15 +127,11 @@ public class EnemyRun : BaseState<EnemyController>
                 player.transform.Translate(Vector3.forward * player.speed * Time.deltaTime);
                 yield return null;
             }
-            else
-            {
-                player.skillB.gameObject.SetActive(false);
-                player.animator.SetBool("SkillB", false);
-                yield return null ;
-            }
         }
         player.skillB.gameObject.SetActive(false);
+        player.isSkill = false;
         player.animator.SetBool("SkillB", false);
+        player.ChangeState(EnemyState.Idle);
     }
 
 }
@@ -158,6 +157,7 @@ public class EnemyHit : BaseState<EnemyController>
 {
     public override void Enter(EnemyController player)
     {
+        player.randCount += 1;
         player.isGroggy = false;
         player.StartCoroutine(HitCo(player));
         if(player.animator.GetCurrentAnimatorStateInfo(0).IsName("On"))
@@ -192,6 +192,7 @@ public class EnemyGroggy : BaseState<EnemyController>
 {
     public override void Enter(EnemyController player)
     {
+        player.randCount += 3f;
         player.animator.Play("Groggy");
         player.groggyParticle.gameObject.SetActive(true);
         player.groggyParticle.Play();
@@ -304,7 +305,6 @@ public class EnemySkillB : BaseState<EnemyController>
         }
 
         player.projectorB.gameObject.SetActive(false);
-        player.isSkill = false;
         player.ChangeState(EnemyState.Run);
     }
 }
@@ -372,12 +372,18 @@ public class EnemyDie : BaseState<EnemyController>
     public override void Enter(EnemyController player)
     {
         player.animator.Play("Die");
-        player.isGroggy = false;
         player.gameObject.layer = 0;
-        player.viewDetector.FindTarget();
-        player.viewDetector.Target.GetComponent<PlayerController>().enabled = false;
-        player.viewDetector.Target.GetComponent<PlayerState>().enabled = false;
-        player.StartCoroutine(TeleportManager.instance.Teleport());
+        player.isGroggy = false;
+        if(player.type != MonsterType.Mob)
+        {
+            player.StopCoroutine(player.Skill);
+            player.slider.gameObject.SetActive(false);
+            player.slider = null;
+            player.viewDetector.Target.GetComponent<PlayerController>().enabled = false;
+            player.viewDetector.Target.GetComponent<PlayerState>().enabled = false;
+            player.viewDetector.Target.GetComponent<PlayerState>().ChangeState(State.Idle);
+            player.StartCoroutine(TeleportManager.instance.Teleport());
+        }
     }
 
     public override void Exit(EnemyController player)
@@ -399,6 +405,10 @@ public class EnemyController : Monster, IInteractable
         set 
         { 
             hp = value; 
+            if(hp <= 0)
+            {
+                Die();
+            }
         }
     }
 
@@ -415,7 +425,7 @@ public class EnemyController : Monster, IInteractable
     public ParticleSystem groggyParticle;
 
     public bool isSkillB;
-
+    public float randCount;
 
 
     private void Awake()
@@ -453,11 +463,6 @@ public class EnemyController : Monster, IInteractable
                 isSkillB = false;
             }
         }
-
-        if(collision.transform.CompareTag("Wall"))
-        {
-            isDrive = false;
-        }
     }
 
     private void Update()
@@ -493,10 +498,6 @@ public class EnemyController : Monster, IInteractable
                 {
                     slider.gameObject.SetActive(true);
                 }
-                else
-                {
-                    slider.gameObject.SetActive(false);
-                }
             }
             slider.value = Hp / maxHp;
         }
@@ -525,7 +526,10 @@ public class EnemyController : Monster, IInteractable
         ExitPool(damage);
         if(!isSkill)
         {
-            ChangeState(EnemyState.Hit);
+            if(enemyState != EnemyState.Die)
+            {
+                ChangeState(EnemyState.Hit);
+            }
         }
     }
 
@@ -571,7 +575,6 @@ public class EnemyController : Monster, IInteractable
         weapon.transform.position = weaponPosB.transform.position;
         weapon.transform.rotation = weaponPosB.transform.rotation;
         isSword = false;
-        isSkillB = false;
     }
 
     public IEnumerator SkillCo()
@@ -579,8 +582,8 @@ public class EnemyController : Monster, IInteractable
         while(true)
         {
             int rand = Random.Range(0, skillDic.Count);
-            int randCool = Random.Range(8, 15);
-            yield return new WaitForSeconds(randCool);
+            randCount = Random.Range(8, 15);
+            yield return new WaitForSeconds(randCount);
             ChangeState(skillDic[rand]);
         }
     }

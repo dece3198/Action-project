@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.UI;
 
 public enum State
 {
@@ -18,7 +19,7 @@ public class PlayerIdle : BaseState<PlayerState>
     private float time;
     public override void Enter(PlayerState player)
     {
-        player.controller.moveSpeed = 3f;
+        player.controller.moveSpeed = 3;
         player.animator.SetBool("Walk", false);
         player.animator.SetBool("Run", false);
         time = 0;
@@ -32,7 +33,10 @@ public class PlayerIdle : BaseState<PlayerState>
     {
         if(player.controller.isMove)
         {
-            player.ChangeState(State.Walk);
+            if(player.playerSkill.isSkill)
+            {
+                player.ChangeState(State.Walk);
+            }
         }
 
         if (player.katanaposA.transform.childCount > 0)
@@ -70,7 +74,10 @@ public class PlayerWalk : BaseState<PlayerState>
 
         if (Input.GetKey(KeyCode.LeftShift))
         {
-            player.ChangeState(State.Run);
+            if(player.playerSkill.isSkill)
+            {
+                player.ChangeState(State.Run);
+            }
         }
     }
 }
@@ -92,6 +99,7 @@ public class PlayerRun : BaseState<PlayerState>
 
     public override void Update(PlayerState player)
     {
+        player.stamina -= 8 * Time.deltaTime;
         if (!Input.GetKey(KeyCode.LeftShift))
         {
             player.ChangeState(State.Walk);
@@ -234,10 +242,13 @@ public class PlayerState : MonoBehaviour,IInteractable
         set { hp = value; }
     }
     public float damage = 0;
-
+    public float maxHp;
+    private float maxStamina;
+    public float stamina;
     private AudioSource audioSource;
     public AudioClip[] audioClip;
 
+    public PlayerSkill playerSkill;
     public PlayerController controller;
     public Animator animator;
     public State state;
@@ -251,6 +262,8 @@ public class PlayerState : MonoBehaviour,IInteractable
     public ParticleSystem atkParticleB;
     public ViewDetector viewDetector;
     public float pushPower;
+    [SerializeField] private Slider hpSlider;
+    [SerializeField] private Slider staminaSlider;
 
     public bool isAtk = false;
     public bool isComboA = false;
@@ -260,10 +273,13 @@ public class PlayerState : MonoBehaviour,IInteractable
 
     private void Awake()
     {
+        maxHp = Hp;
+        maxStamina = stamina;
         audioSource = GetComponent<AudioSource>();
         controller = GetComponent<PlayerController>();
         animator = GetComponent<Animator>();
         viewDetector = GetComponent<ViewDetector>();
+        playerSkill = GetComponent<PlayerSkill>();
         stateMachine.Reset(this);
         stateMachine.AddState(State.Idle, new PlayerIdle());
         stateMachine.AddState(State.Walk, new PlayerWalk());
@@ -287,8 +303,11 @@ public class PlayerState : MonoBehaviour,IInteractable
                     {
                         if (isAtkCool)
                         {
-                            StartCoroutine(AttackCo());
-                            ChangeState(State.Attack);
+                            if(playerSkill.isSkill)
+                            {
+                                StartCoroutine(AttackCo());
+                                ChangeState(State.Attack);
+                            }
                         }
                     }
                 }
@@ -303,26 +322,47 @@ public class PlayerState : MonoBehaviour,IInteractable
         if (Input.GetKeyDown(KeyCode.Space))
         {
             if (state != State.Hit)
-                ChangeState(State.Jump);
+            {
+                if(playerSkill.isSkill)
+                {
+                    ChangeState(State.Jump);
+                }
+            }
         }
 
         viewDetector.FindAttackTarget();
         if(isBlockCool)
         {
-            if (Input.GetMouseButtonDown(1))
+            if(stamina >= 25)
             {
-                animator.Play("Block");
-                StartCoroutine(BlockCO());
-                if (viewDetector.AtkTarget != null)
+                if (Input.GetMouseButtonDown(1))
                 {
-                    if (viewDetector.AtkTarget.GetComponent<EnemyController>().isAtk)
+                    stamina -= 25f;
+                    animator.Play("Block");
+                    StartCoroutine(BlockCO());
+                    if (viewDetector.AtkTarget != null)
                     {
-                        audioSource.PlayOneShot(audioClip[1]);
-                        viewDetector.AtkTarget.GetComponent<EnemyController>().ChangeState(EnemyState.Groggy);
+                        if (viewDetector.AtkTarget.GetComponent<EnemyController>().isAtk)
+                        {
+                            audioSource.PlayOneShot(audioClip[1]);
+                            viewDetector.AtkTarget.GetComponent<EnemyController>().ChangeState(EnemyState.Groggy);
+                        }
                     }
                 }
             }
         }
+
+        hpSlider.value = Hp / maxHp;
+        if(stamina < maxStamina)
+        {
+            staminaSlider.gameObject.SetActive(true);
+            stamina += 3 * Time.deltaTime;
+        }
+        else
+        {
+            staminaSlider.gameObject.SetActive(false);
+        }
+        staminaSlider.value = stamina / maxStamina;
     }
 
     public void ChangeState(State _state)
@@ -404,9 +444,15 @@ public class PlayerState : MonoBehaviour,IInteractable
     {
         Hp -= damage;
         Debug.Log(Hp);
+        CameraShake.instance.Shake();
         controller.moveSpeed = 0;
-        if(state != State.Hit)
-        ChangeState(State.Hit);
+        if(state != State.Attack)
+        {
+            if (playerSkill.isSkill)
+            {
+                ChangeState(State.Hit);
+            }
+        }
     }
 
     public void Die()
