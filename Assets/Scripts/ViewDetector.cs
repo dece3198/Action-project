@@ -72,6 +72,34 @@ public class ViewDetector : MonoBehaviour
         rangeTarget = null;
     }
 
+    public void FindQSkillTarget(float damage, float power)
+    {
+        Collider[] targets = Physics.OverlapSphere(transform.position, rangeRadiu, layerMask);
+
+        for (int i = 0; i < targets.Length; i++)
+        {
+            Vector3 findTarget = (targets[i].transform.position - transform.position).normalized;
+            if (Vector3.Dot(transform.forward, findTarget) < Mathf.Cos(rangeAngle * 0.5f * Mathf.Deg2Rad))
+            {
+                continue;
+            }
+            float findTargetRange = Vector3.Distance(transform.position, targets[i].transform.position);
+            if (Physics.Raycast(transform.position, findTarget, findTargetRange, obstaclemask))
+            {
+                continue;
+            }
+            Debug.DrawRay(transform.position, findTarget * findTargetRange, Color.red);
+
+            rangeTarget = targets[i].gameObject;
+            if (rangeTarget != null)
+            {
+                rangeTarget.GetComponent<IInteractable>()?.TakeHit(damage);
+                rangeTarget.GetComponent<Rigidbody>().AddForce((transform.forward + transform.right) * power, ForceMode.Impulse);
+            }
+        }
+        rangeTarget = null;
+    }
+
     public void FindAttackTarget()
     {
         Collider[] targets = Physics.OverlapSphere(transform.position, atkRadiu, layerMask);

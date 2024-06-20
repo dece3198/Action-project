@@ -121,15 +121,16 @@ public class EnemyRun : BaseState<EnemyController>
         player.skillB.Play();
         while (runningTime > 0f)
         {
-            if(player.isDrive)
+            runningTime -= Time.deltaTime;
+            if (player.isDrive)
             {
-                runningTime -= Time.deltaTime;
                 player.transform.Translate(Vector3.forward * player.speed * Time.deltaTime);
-                yield return null;
             }
+            yield return null;
         }
         player.skillB.gameObject.SetActive(false);
         player.isSkill = false;
+        player.isDrive = true;
         player.animator.SetBool("SkillB", false);
         player.ChangeState(EnemyState.Idle);
     }
@@ -145,6 +146,7 @@ public class EnemyAttack : BaseState<EnemyController>
 
     public override void Exit(EnemyController player)
     {
+        player.isAtk = false;
     }
 
     public override void Update(EnemyController player)
@@ -462,6 +464,11 @@ public class EnemyController : Monster, IInteractable
                 collision.transform.GetComponent<IInteractable>()?.TakeHit(damage);
                 isSkillB = false;
             }
+        }
+
+        if(collision.transform.CompareTag("Wall"))
+        {
+            isDrive = false;
         }
     }
 

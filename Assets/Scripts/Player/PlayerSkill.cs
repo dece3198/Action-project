@@ -88,12 +88,14 @@ public class PlayerSkill : MonoBehaviour
         qSkillParticle.Play();
         qSkillParticle.transform.position = qSkillPos.transform.position;
         qSkillParticle.transform.rotation = qSkillPos.transform.rotation;
+        qSkillObj.transform.position = qSkillPos.transform.position;
+        qSkillObj.transform.rotation = qSkillPos.transform.rotation;
         float time = 0.8f;
         while (time > 0)
         {
             time -= Time.deltaTime;
-            qSkillObj.GetComponent<ViewDetector>().FindRangeTarget(state.damage,state.pushPower);
-            qSkillObj.transform.Translate(Vector3.forward * 15 * Time.deltaTime);
+            qSkillObj.GetComponent<ViewDetector>().FindQSkillTarget(state.damage,state.pushPower);
+            qSkillObj.transform.Translate(Vector3.right * 15 * Time.deltaTime);
             yield return null;
         }
         isSkill = true;

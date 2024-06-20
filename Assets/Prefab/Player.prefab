@@ -1,64 +1,5 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &232789401
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 232789402}
-  - component: {fileID: 232789403}
-  m_Layer: 8
-  m_Name: QSkillObj
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &232789402
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 232789401}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2250892995011423438}
-  m_RootOrder: 9
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &232789403
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 232789401}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4d9b74e93b57aea47a40adc4453923d8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  target: {fileID: 0}
-  rangeTarget: {fileID: 0}
-  atkTarget: {fileID: 0}
-  radiu: 0
-  angle: 0
-  rangeRadiu: 1
-  rangeAngle: 360
-  atkRadiu: 0
-  atkAngle: 0
-  layerMask:
-    serializedVersion: 2
-    m_Bits: 128
-  obstaclemask:
-    serializedVersion: 2
-    m_Bits: 512
 --- !u!1 &1570736632
 GameObject:
   m_ObjectHideFlags: 0
@@ -652,7 +593,6 @@ Transform:
   - {fileID: 2091736616463624822}
   - {fileID: 6223893212842149198}
   - {fileID: 1608347093}
-  - {fileID: 232789402}
   - {fileID: 1925067658152877184}
   m_Father: {fileID: 0}
   m_RootOrder: 0
@@ -747,6 +687,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hp: 100
   damage: 10
+  maxHp: 0
+  stamina: 0
   audioClip:
   - {fileID: 8300000, guid: f1afb0da2797d624d9b88e0de83edd1e, type: 3}
   - {fileID: 8300000, guid: f5c2b928b5e76bb4da106a5ec3e4774f, type: 3}
@@ -754,6 +696,7 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 92e1982e63f140742afa0b98ddf63a57, type: 3}
   - {fileID: 8300000, guid: 546e2ddd0d6b17148974635bd8e2a108, type: 3}
   - {fileID: 8300000, guid: 3fe9c21ad2c182044bb5d8a19d6d7aed, type: 3}
+  playerSkill: {fileID: 0}
   controller: {fileID: 0}
   animator: {fileID: 0}
   state: 0
@@ -766,6 +709,8 @@ MonoBehaviour:
   atkParticleB: {fileID: 5703234312787071470}
   viewDetector: {fileID: 0}
   pushPower: 4
+  hpSlider: {fileID: 0}
+  staminaSlider: {fileID: 0}
   isAtk: 0
   isComboA: 0
   isComboB: 0
@@ -910,11 +855,12 @@ MonoBehaviour:
   qSkillCool: 15
   qSkillImage: {fileID: 0}
   qSkillPos: {fileID: 1608347092}
-  qSkillObj: {fileID: 232789401}
+  qSkillObj: {fileID: 0}
   qSkillParticle: {fileID: 0}
   eSkillCool: 30
   eSkillImage: {fileID: 0}
   eSkillParticle: {fileID: 3692829395294271103}
+  isSkill: 1
 --- !u!1 &1529214942557881064
 GameObject:
   m_ObjectHideFlags: 0
@@ -2835,7 +2781,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5541643219450673440, guid: f73fc098e7d39a24cbba2baf0f5660df, type: 3}
       propertyPath: m_RootOrder
-      value: 10
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 5541643219450673440, guid: f73fc098e7d39a24cbba2baf0f5660df, type: 3}
       propertyPath: m_LocalScale.x

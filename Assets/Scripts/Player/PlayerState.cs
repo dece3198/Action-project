@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 public enum State
 {
-    Idle, Walk, Run, Jump, Attack, Hit
+    Idle, Walk, ToughWalk, Run, Jump, Attack, Hit
 }
 
 public abstract class BaseState<T>
@@ -31,6 +31,11 @@ public class PlayerIdle : BaseState<PlayerState>
 
     public override void Update(PlayerState player)
     {
+        if(player.stamina < player.maxStamina)
+        {
+            player.stamina += 10 * Time.deltaTime;
+        }
+
         if(player.controller.isMove)
         {
             if(player.playerSkill.isSkill)
@@ -67,6 +72,11 @@ public class PlayerWalk : BaseState<PlayerState>
 
     public override void Update(PlayerState player)
     {
+        if (player.stamina < player.maxStamina)
+        {
+            player.stamina += 5 * Time.deltaTime;
+        }
+
         if (!player.controller.isMove)
         {
             player.ChangeState(State.Idle);
@@ -76,8 +86,40 @@ public class PlayerWalk : BaseState<PlayerState>
         {
             if(player.playerSkill.isSkill)
             {
-                player.ChangeState(State.Run);
+                if(player.stamina > 0)
+                {
+                    player.ChangeState(State.Run);
+                }
             }
+        }
+    }
+}
+
+public class PlayerToughWalk : BaseState<PlayerState>
+{
+    public override void Enter(PlayerState player)
+    {
+        player.controller.moveSpeed = 1;
+        player.isToughWalk = true;
+        player.animator.SetBool("ToughWalk", true);
+    }
+
+    public override void Exit(PlayerState player)
+    {
+    }
+
+    public override void Update(PlayerState player)
+    {
+        if (player.stamina < player.maxStamina)
+        {
+            player.stamina += 10 * Time.deltaTime;
+        }
+
+        if (player.stamina >= 50)
+        {
+            player.animator.SetBool("ToughWalk", false);
+            player.isToughWalk = false;
+            player.ChangeState(State.Walk);
         }
     }
 }
@@ -85,7 +127,7 @@ public class PlayerWalk : BaseState<PlayerState>
 public class PlayerRun : BaseState<PlayerState>
 {
     public override void Enter(PlayerState player)
-    {
+    { 
         player.controller.moveSpeed = 5;
         player.animator.SetBool("Run", true);
         player.runParticle.gameObject.SetActive(true);
@@ -99,7 +141,17 @@ public class PlayerRun : BaseState<PlayerState>
 
     public override void Update(PlayerState player)
     {
-        player.stamina -= 8 * Time.deltaTime;
+        if (player.stamina <= 0)
+        {
+            player.ChangeState(State.ToughWalk);
+            return;
+        }
+
+        if(player.controller.moveSpeed > 0)
+        {
+            player.stamina -= 10 * Time.deltaTime;
+        }
+
         if (!Input.GetKey(KeyCode.LeftShift))
         {
             player.ChangeState(State.Walk);
@@ -243,7 +295,7 @@ public class PlayerState : MonoBehaviour,IInteractable
     }
     public float damage = 0;
     public float maxHp;
-    private float maxStamina;
+    public float maxStamina;
     public float stamina;
     private AudioSource audioSource;
     public AudioClip[] audioClip;
@@ -270,6 +322,7 @@ public class PlayerState : MonoBehaviour,IInteractable
     public bool isComboB = false;
     private bool isAtkCool = true;
     private bool isBlockCool = true;
+    public bool isToughWalk = false;
 
     private void Awake()
     {
@@ -283,6 +336,7 @@ public class PlayerState : MonoBehaviour,IInteractable
         stateMachine.Reset(this);
         stateMachine.AddState(State.Idle, new PlayerIdle());
         stateMachine.AddState(State.Walk, new PlayerWalk());
+        stateMachine.AddState(State.ToughWalk, new PlayerToughWalk());
         stateMachine.AddState(State.Run, new PlayerRun());
         stateMachine.AddState(State.Jump, new PlayerJump());
         stateMachine.AddState(State.Attack, new PlayerAttack());
@@ -335,17 +389,20 @@ public class PlayerState : MonoBehaviour,IInteractable
         {
             if(stamina >= 25)
             {
-                if (Input.GetMouseButtonDown(1))
+                if(isAtk)
                 {
-                    stamina -= 25f;
-                    animator.Play("Block");
-                    StartCoroutine(BlockCO());
-                    if (viewDetector.AtkTarget != null)
+                    if (Input.GetMouseButtonDown(1))
                     {
-                        if (viewDetector.AtkTarget.GetComponent<EnemyController>().isAtk)
+                        stamina -= 20f;
+                        animator.Play("Block");
+                        StartCoroutine(BlockCO());
+                        if (viewDetector.AtkTarget != null)
                         {
-                            audioSource.PlayOneShot(audioClip[1]);
-                            viewDetector.AtkTarget.GetComponent<EnemyController>().ChangeState(EnemyState.Groggy);
+                            if (viewDetector.AtkTarget.GetComponent<EnemyController>().isAtk)
+                            {
+                                audioSource.PlayOneShot(audioClip[1]);
+                                viewDetector.AtkTarget.GetComponent<EnemyController>().ChangeState(EnemyState.Groggy);
+                            }
                         }
                     }
                 }
@@ -353,20 +410,15 @@ public class PlayerState : MonoBehaviour,IInteractable
         }
 
         hpSlider.value = Hp / maxHp;
-        if(stamina < maxStamina)
-        {
-            staminaSlider.gameObject.SetActive(true);
-            stamina += 3 * Time.deltaTime;
-        }
-        else
-        {
-            staminaSlider.gameObject.SetActive(false);
-        }
         staminaSlider.value = stamina / maxStamina;
     }
 
     public void ChangeState(State _state)
     {
+        if(isToughWalk)
+        {
+            return;
+        }
         state = _state;
         stateMachine.ChangeState(_state);
     }

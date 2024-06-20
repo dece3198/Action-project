@@ -120,6 +120,10 @@ public class WarriorRun : BaseState<WarriorController>
                 warrior.transform.Translate(Vector3.forward * warrior.speed * Time.deltaTime);
                 yield return null;
             }
+            else
+            {
+                yield return null;
+            }
         }
 
         warrior.isSkillD = false;
