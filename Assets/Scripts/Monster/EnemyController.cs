@@ -551,7 +551,7 @@ public class EnemyController : Monster, IInteractable
     public void Attack()
     {
         damage = 5;
-        if(isAtk)
+        if(isSword)
         {
             viewDetector.FindAttackTarget();
             if (viewDetector.AtkTarget != null)

@@ -33,4 +33,9 @@ public class TeleportManager : MonoBehaviour
         player.GetComponent<PlayerState>().enabled = true;
         player.GetComponent<PlayerController>().enabled = true;
     }
+
+    public void ExitButton()
+    {
+        LoadingController.LoadScene("MainMenu");
+    }
 }

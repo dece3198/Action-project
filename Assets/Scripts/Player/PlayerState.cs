@@ -112,7 +112,7 @@ public class PlayerToughWalk : BaseState<PlayerState>
     {
         if (player.stamina < player.maxStamina)
         {
-            player.stamina += 10 * Time.deltaTime;
+            player.stamina += 15 * Time.deltaTime;
         }
 
         if (player.stamina >= 50)
@@ -291,7 +291,14 @@ public class PlayerState : MonoBehaviour,IInteractable
     public float Hp 
     { 
         get { return hp; }
-        set { hp = value; }
+        set 
+        { 
+            hp = value; 
+            if(hp <= 0)
+            {
+                Die();
+            }
+        }
     }
     public float damage = 0;
     public float maxHp;
@@ -316,6 +323,7 @@ public class PlayerState : MonoBehaviour,IInteractable
     public float pushPower;
     [SerializeField] private Slider hpSlider;
     [SerializeField] private Slider staminaSlider;
+    [SerializeField] private GameObject dieText;
 
     public bool isAtk = false;
     public bool isComboA = false;
@@ -495,7 +503,6 @@ public class PlayerState : MonoBehaviour,IInteractable
     public void TakeHit(float damage)
     {
         Hp -= damage;
-        Debug.Log(Hp);
         CameraShake.instance.Shake();
         controller.moveSpeed = 0;
         if(state != State.Attack)
@@ -509,6 +516,8 @@ public class PlayerState : MonoBehaviour,IInteractable
 
     public void Die()
     {
+        Time.timeScale = 0;
+        dieText.gameObject.SetActive(true);
     }
 
     private IEnumerator AttackCo()
